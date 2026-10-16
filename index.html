@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" id="meta-theme-color" content="#10B981">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>FluxChat & FluxAI</title>
+
+<script>
+  /* set theme INSTANT sebelum CSS render */
+  (function() {
+    var theme = localStorage.getItem("flux_theme") || "hijau";
+    var dark = localStorage.getItem("flux_dark") === "1";
+    document.documentElement.setAttribute("data-theme", theme);
+    if (dark) document.documentElement.classList.add("dark");
+  })();
+</script>
+
+<meta name="theme-color" id="meta-theme-color" content="#10B981">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FluxChat">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="assets/icon-152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/icon-16.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- ============================================================
+     SPLASH SCREEN
+     ============================================================ -->
+<div id="splash" class="screen active splash-screen">
+  <div class="splash-bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="splash-content">
+    <div class="splash-logo-wrap">
+      <div class="splash-logo-ring"></div>
+      <div class="splash-logo">F</div>
+    </div>
+    <h1 class="splash-title">FluxChat</h1>
+    <p class="splash-tagline">Chat yang nge-flow ⚡</p>
+    <div class="splash-loader">
+      <span></span>
+    </div>
+  </div>
+  <div class="splash-footer">
+    <span>Powered by</span>
+    <strong>FluxAI</strong>
+  </div>
+</div>
+
+<!-- ============================================================
+     AUTH SCREEN
+     ============================================================ -->
+<div id="auth" class="screen">
+  <div class="auth-container">
+    <div class="login-logo">F</div>
+    <h1 class="login-title">Masuk FluxChat</h1>
+    <p class="login-subtitle">Chat, call, share — semua nge-flow.</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-mode="login" type="button">Masuk</button>
+      <button class="auth-tab" data-mode="register" type="button">Daftar</button>
+    </div>
+
+    <form id="auth-form" autocomplete="on">
+      <div id="field-name-wrap" style="display:none;">
+        <input type="text" id="auth-name" placeholder="Nama lengkap" autocomplete="name">
+      </div>
+      <input type="email" id="auth-email" placeholder="Email" autocomplete="email" required>
+      <input type="password" id="auth-password" placeholder="Password (min 6 karakter)" autocomplete="current-password" required>
+      <div id="auth-error" class="hidden"></div>
+      <button type="submit" id="auth-submit" class="btn-primary">Masuk</button>
+    </form>
+
+    <div class="divider"><span>atau</span></div>
+
+    <button id="auth-google" class="btn-google" type="button">
+      <span style="font-weight:900;color:#4285F4">G</span> Login dengan Google
+    </button>
+    <button id="auth-anon" class="btn-anon" type="button">
+      👤 Lanjut sebagai Tamu
+    </button>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APP
+     ============================================================ -->
+<div id="app" class="screen">
+
+  <!-- ==================== HEADER (WA-STYLE) ==================== -->
+  <header class="app-header">
+    <div class="app-brand">
+      <span>FluxChat</span>
+    </div>
+    <div class="header-actions">
+      <button class="icon-round-btn" data-action="search" type="button" title="Cari">🔍</button>
+      <button class="icon-round-btn" id="btn-dark-toggle" type="button" title="Dark mode">🌙</button>
+      <button class="icon-round-btn header-menu-btn" id="header-menu-btn" type="button" title="Menu">⋮</button>
+    </div>
+  </header>
+
+  <!-- ============ TAB: CHAT (WA-STYLE) ============ -->
+  <div id="tab-chat" class="tab-content active">
+
+    <!-- Search bar -->
+    <div class="wa-search-wrap">
+      <div class="wa-search">
+        <span class="wa-search-icon">🔍</span>
+        <input type="text" id="chat-search-input" placeholder="Tanya FluxAI atau cari" autocomplete="off">
+      </div>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="wa-filter-tabs">
+      <button class="wa-filter active" data-filter="all" type="button">Semua</button>
+      <button class="wa-filter" data-filter="unread" type="button">Belum dibaca</button>
+      <button class="wa-filter" data-filter="favorites" type="button">Favorit</button>
+      <button class="wa-filter" data-filter="groups" type="button">Grup</button>
+    </div>
+
+    <!-- Subtab: chat / story -->
+    <div class="tk-subtabs">
+      <button class="tk-subtab active" data-subtab="chat" type="button">💬 Chat</button>
+      <button class="tk-subtab" data-subtab="story" type="button">📖 Story</button>
+    </div>
+
+    <div class="tk-subpanel active" data-panel="chat">
+      <div class="tk-chat-list">
+
+        <!-- FluxAI — paling atas -->
+        <div class="tk-chat-item" id="item-ai">
+          <div class="tk-avatar ai-avatar">
+            <span>F</span>
+            <span class="tk-avatar-online"></span>
+          </div>
+          <div class="tk-chat-info">
+            <div class="tk-chat-name">
+              FluxAI
+              <span class="tk-verified">✓</span>
+              <span class="tk-chip tk-chip-ai">AI</span>
+            </div>
+            <div class="tk-chat-preview">Asisten AI cerdas · <span style="color:var(--online);font-weight:700;">Online</span></div>
+          </div>
+          <div class="tk-chat-meta">
+            <div class="tk-chat-time">AI</div>
+          </div>
+        </div>
+
+        <!-- Chat Global -->
+        <div class="tk-chat-item" id="item-global">
+          <div class="tk-avatar global-avatar">
+            <span>🌍</span>
+          </div>
+          <div class="tk-chat-info">
+            <div class="tk-chat-name">
+              Chat Global
+              <span class="tk-chip tk-chip-public">PUBLIK</span>
+            </div>
+            <div class="tk-chat-preview" id="global-preview">Publik · Semua user</div>
+          </div>
+          <div class="tk-chat-meta">
+            <div class="tk-chat-time">🌍</div>
+          </div>
+        </div>
+
+        <!-- Section: chat pribadi -->
+        <div class="tk-section-label">Chat Pribadi</div>
+
+        <div id="private-list-tk" class="tk-private-list">
+          <div class="tk-empty">
+            <div class="tk-empty-icon">💬</div>
+            <p>Belum ada chat pribadi</p>
+            <span>Tap tombol <b>=</b> di bawah untuk mulai chat</span>
+          </div>
+        </div>
+
+        <!-- Section: grup -->
+        <div class="tk-section-label" id="group-section-label" style="display:none;">Grup</div>
+        <div id="groups-list-tk" class="tk-private-list"></div>
+
+
+
+      </div>
+    </div>
+
+    <div class="tk-subpanel" data-panel="story">
+      <div class="story-bar-wrap">
+        <div class="story-list-tk" id="story-list-tk">
+          <div class="story-item-tk story-add" id="btn-add-story-tk">
+            <div class="story-ring-tk story-add-ring">
+              <div class="story-avatar-tk">+</div>
+            </div>
+            <span>Story Kamu</span>
+          </div>
+        </div>
+      </div>
+      <div id="story-content-tk" class="story-content-tk">
+        <div class="tk-empty">
+          <div class="tk-empty-icon">📖</div>
+          <p>Belum ada story</p>
+          <span>Tap + untuk posting story</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============ TAB: FRIENDS ============ -->
+  <div id="tab-friend" class="tab-content">
+    <div class="fr-header">
+      <h2 class="fr-title">Teman</h2>
+      <button class="icon-round-btn" id="btn-add-friend" type="button">+</button>
+    </div>
+
+    <div class="fr-subtabs">
+      <button class="fr-subtab active" data-fr="friends" type="button">👥 Teman</button>
+      <button class="fr-subtab" data-fr="requests" type="button">
+        📨 Request
+        <span id="fr-requests-badge" class="fr-badge hidden">0</span>
+      </button>
+      <button class="fr-subtab" data-fr="search" type="button">🔍 Cari</button>
+    </div>
+
+    <div class="fr-panel active" data-fr-panel="friends">
+      <div id="fr-friends-list" class="fr-list">
+        <div class="tk-empty">
+          <div class="tk-empty-icon">👥</div>
+          <p>Belum ada teman</p>
+          <span>Tap <b>+</b> untuk tambah teman</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fr-panel" data-fr-panel="requests">
+      <div id="fr-requests-list" class="fr-list">
+        <div class="tk-empty">
+          <div class="tk-empty-icon">📨</div>
+          <p>Belum ada request</p>
+          <span>Request dari user lain muncul di sini</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fr-panel" data-fr-panel="search">
+      <div class="fr-search-wrap">
+        <input type="text" id="fr-search-input" placeholder="Cari nama, email, atau UID...">
+      </div>
+      <div id="fr-search-results" class="fr-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ TAB: GAME ============ -->
+  <div id="tab-game" class="tab-content">
+    <div class="game-header">
+      <h2 class="game-header-title">Mini Games</h2>
+    </div>
+
+    <div class="game-card">
+      <div class="game-cover">
+        <span class="badge-populer">🎮 POPULER</span>
+        <div class="game-bolt">⚡</div>
+      </div>
+      <div class="game-body">
+        <h2 class="game-title">Tap Challenge</h2>
+        <p class="game-desc">Tap secepat mungkin dalam 30 detik. Kumpulkan rekor skor tertinggi!</p>
+        <div class="game-stats">
+          <div class="game-stat">
+            <div class="game-stat-value" id="game-high-score">0</div>
+            <div class="game-stat-label">HIGH SCORE</div>
+          </div>
+          <div class="game-stat">
+            <div class="game-stat-value" id="game-total-plays">0</div>
+            <div class="game-stat-label">TOTAL MAIN</div>
+          </div>
+          <div class="game-stat">
+            <div class="game-stat-value">30s</div>
+            <div class="game-stat-label">DURASI</div>
+          </div>
+        </div>
+        <button class="btn-play" id="btn-play-game" type="button">▶ Main Sekarang</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TAB: PROFILE ============ -->
+  <div id="tab-profile" class="tab-content">
+    <div class="profile-header-bar">
+      <h2 class="profile-page-title">Profil Saya</h2>
+      <button class="icon-round-btn" id="btn-edit-profile-header" type="button">✏️</button>
+    </div>
+
+    <div class="profile-main">
+
+      <div class="profile-card">
+        <div class="profile-cover" id="profile-banner">
+          <button class="cover-cam-btn" id="btn-edit-banner" type="button">📷</button>
+        </div>
+        <div class="profile-avatar-big" id="profile-avatar">
+          <span id="profile-avatar-letter">U</span>
+          <button class="avatar-edit-btn" id="btn-edit-avatar" type="button">✏️</button>
+        </div>
+        <div class="profile-body">
+          <div class="profile-name">
+            <span id="profile-name">User</span>
+            <span class="verified">✓</span>
+          </div>
+          <div class="profile-handle" id="profile-username">@user</div>
+          <div class="profile-bio" id="profile-bio">Belum ada bio</div>
+          <div class="badges-row">
+            <span class="badge badge-verified">✓ Verified</span>
+            <span class="badge badge-developer">&lt;/&gt; Developer</span>
+            <span class="badge badge-premium">⭐ Premium+</span>
+          </div>
+          <div class="uid-box">UID: <strong id="profile-uid">-</strong></div>
+          <div class="stats-row">
+            <div class="stat-item">
+              <div class="stat-emoji">🎮</div>
+              <div class="stat-value" id="p-stat-game">0</div>
+              <div class="stat-label">GAME</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-emoji">👥</div>
+              <div class="stat-value" id="p-stat-teman">0</div>
+              <div class="stat-label">TEMAN</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-emoji">🏆</div>
+              <div class="stat-value" id="p-stat-challenge">0</div>
+              <div class="stat-label">CHALLENGE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="menu-list">
+        <div class="menu-item" id="menu-photo">
+          <div class="menu-icon">📷</div>
+          <div class="menu-content">
+            <div class="menu-title">Foto Profil</div>
+            <div class="menu-sub">Ketuk untuk ganti foto</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-banner">
+          <div class="menu-icon">🖼️</div>
+          <div class="menu-content">
+            <div class="menu-title">Banner Profil</div>
+            <div class="menu-sub">Ketuk untuk ganti banner</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-nama">
+          <div class="menu-icon">✏️</div>
+          <div class="menu-content">
+            <div class="menu-title">Nama</div>
+            <div class="menu-sub" id="menu-nama-value">User</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-bio">
+          <div class="menu-icon">💬</div>
+          <div class="menu-content">
+            <div class="menu-title">Bio</div>
+            <div class="menu-sub" id="menu-bio-sub">Belum ada bio</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-username">
+          <div class="menu-icon">👤</div>
+          <div class="menu-content">
+            <div class="menu-title">Nama Pengguna</div>
+            <div class="menu-sub" id="menu-username-sub">@user</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-uid">
+          <div class="menu-icon">🔑</div>
+          <div class="menu-content">
+            <div class="menu-title">UID</div>
+            <div class="menu-sub" id="menu-uid-value">-</div>
+          </div>
+          <div class="menu-chevron">📋</div>
+        </div>
+      </div>
+
+      <div class="menu-list">
+        <div class="menu-item" id="menu-theme">
+          <div class="menu-icon">🎨</div>
+          <div class="menu-content">
+            <div class="menu-title">Tema</div>
+            <div class="menu-sub" id="menu-theme-sub">Hijau Daun</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-wallpaper">
+          <div class="menu-icon">🖼️</div>
+          <div class="menu-content">
+            <div class="menu-title">Wallpaper Chat</div>
+            <div class="menu-sub">Ganti background chat</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-font-size">
+          <div class="menu-icon">🔤</div>
+          <div class="menu-content">
+            <div class="menu-title">Ukuran Font</div>
+            <div class="menu-sub">Kecil · Sedang · Besar</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-notif-sound">
+          <div class="menu-icon">🔔</div>
+          <div class="menu-content">
+            <div class="menu-title">Suara Notifikasi</div>
+            <div class="menu-sub">On / Off</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-privacy">
+          <div class="menu-icon">🔒</div>
+          <div class="menu-content">
+            <div class="menu-title">Privasi</div>
+            <div class="menu-sub">Kelola keamanan data profil</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-security">
+          <div class="menu-icon">🛡️</div>
+          <div class="menu-content">
+            <div class="menu-title">Keamanan Akun</div>
+            <div class="menu-sub">Firebase Auth</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-storage">
+          <div class="menu-icon">📦</div>
+          <div class="menu-content">
+            <div class="menu-title">Penyimpanan & Cache</div>
+            <div class="menu-sub">Kelola cache FluxAI</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="menu-about">
+          <div class="menu-icon">📱</div>
+          <div class="menu-content">
+            <div class="menu-title">Tentang FluxChat</div>
+            <div class="menu-sub">Versi 2.0.0</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+
+        <div class="menu-item" id="btn-logout">
+          <div class="menu-icon">🚪</div>
+          <div class="menu-content">
+            <div class="menu-title" style="color:var(--danger)">Keluar Akun</div>
+          </div>
+          <div class="menu-chevron">›</div>
+        </div>
+      </div>
+
+      <div class="copyright-footer">
+        FluxChat & FluxAI © 2026 · Dibuat dengan ❤️
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== BOTTOM NAV ==================== -->
+  <nav class="bottom-nav">
+    <button class="tk-nav-item active" data-tab="chat" type="button" style="position:relative;">
+      <span class="tk-nav-icon">💬</span>
+      <span>Chat</span>
+      <span id="badge-chat" class="nav-badge hidden"></span>
+    </button>
+    <button class="tk-nav-item" data-tab="friend" type="button" style="position:relative;">
+      <span class="tk-nav-icon">👥</span>
+      <span>Teman</span>
+      <span id="badge-friend" class="nav-badge hidden"></span>
+    </button>
+    <button class="tk-nav-item" data-tab="game" type="button">
+      <span class="tk-nav-icon">🎮</span>
+      <span>Game</span>
+    </button>
+    <button class="tk-nav-item" data-tab="profile" type="button">
+      <span class="tk-nav-icon">👤</span>
+      <span>Profil</span>
+    </button>
+  </nav>
+
+  <!-- ==================== FAB "=" ==================== -->
+  <button class="fab fab-menu" id="btn-new-chat" type="button" aria-label="Menu">
+    <span class="fab-icon-eq">=</span>
+  </button>
+
+</div>
+
+<!-- ============================================================
+     HEADER MENU DROPDOWN (WA-style 3-dot)
+     ============================================================ -->
+<div id="header-menu-dropdown" class="header-menu-dropdown hidden">
+  <div class="header-menu-item" data-action="new-group">
+    <span class="hm-icon">👥</span> Grup baru
+  </div>
+  <div class="header-menu-item" data-action="new-contact">
+    <span class="hm-icon">➕</span> Kontak baru
+  </div>
+  <div class="header-menu-item" data-action="shortcut">
+    <span class="hm-icon">📌</span> Tambah pintasan chat
+  </div>
+  <div class="header-menu-divider"></div>
+  <div class="header-menu-item" data-action="contact-list">
+    <span class="hm-icon">📇</span> Lihat kontak
+  </div>
+  <div class="header-menu-item" data-action="mark-all-unread">
+    <span class="hm-icon">📩</span> Tandai belum dibaca
+  </div>
+  <div class="header-menu-item" data-action="select-all">
+    <span class="hm-icon">☑️</span> Pilih semua
+  </div>
+  <div class="header-menu-divider"></div>
+  <div class="header-menu-item" data-action="lock-chat">
+    <span class="hm-icon">🔒</span> Kunci obrolan
+  </div>
+  <div class="header-menu-item" data-action="add-favorite">
+    <span class="hm-icon">⭐</span> Tambah ke favorit
+  </div>
+  <div class="header-menu-item" data-action="add-list">
+    <span class="hm-icon">📋</span> Tambah ke daftar
+  </div>
+  <div class="header-menu-divider"></div>
+  <div class="header-menu-item" data-action="clear-chat">
+    <span class="hm-icon">🧹</span> Bersihkan obrolan
+  </div>
+  <div class="header-menu-item danger" data-action="block">
+    <span class="hm-icon">🚫</span> Blokir
+  </div>
+</div>
+
+<!-- ============================================================
+     SELECTION TOOLBAR (WA-style multi-select)
+     ============================================================ -->
+<div id="selection-toolbar" class="selection-toolbar hidden">
+  <button class="sel-back" id="sel-back" type="button">←</button>
+  <span class="sel-count" id="sel-count">0</span>
+  <div class="sel-actions">
+    <button class="icon-round-btn" data-sel-action="pin" type="button" title="Pin">📌</button>
+    <button class="icon-round-btn" data-sel-action="delete" type="button" title="Hapus">🗑️</button>
+    <button class="icon-round-btn" data-sel-action="mute" type="button" title="Bisukan">🔕</button>
+    <button class="icon-round-btn" data-sel-action="archive" type="button" title="Arsipkan">⬇️</button>
+    <button class="icon-round-btn" id="sel-more" type="button" title="Lainnya">⋮</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     CHAT DETAIL OVERLAY
+     ============================================================ -->
+<div id="chat-detail" class="chat-detail hidden">
+  <header class="chat-detail-header">
+    <button id="chat-back" class="back-btn" type="button">←</button>
+    <div class="chat-header-user" id="chat-header-user">
+      <div class="chat-avatar-sm" id="chat-avatar">T</div>
+      <div class="chat-header-info">
+        <div class="chat-name" id="chat-name">Chat</div>
+        <div class="chat-status" id="chat-status">Online</div>
+      </div>
+    </div>
+    <div class="chat-header-actions">
+      <button id="chat-call" class="icon-round-btn" type="button">📞</button>
+      <button id="chat-video" class="icon-round-btn" type="button">📹</button>
+      <button id="chat-menu-btn" class="icon-round-btn" type="button">⋮</button>
+    </div>
+  </header>
+
+  <main class="chat-messages" id="chat-messages"></main>
+
+  <div class="voice-preview hidden" id="voice-preview">
+    <button id="btn-cancel-voice" class="voice-cancel" type="button">✕</button>
+    <div class="voice-preview-info">
+      <div class="voice-icon">🎤</div>
+      <div class="voice-duration" id="preview-duration">0:00</div>
+    </div>
+    <button id="btn-send-voice" class="voice-send" type="button">➤</button>
+  </div>
+
+  <div class="recording-ui hidden" id="recording-ui">
+    <div class="recording-dot"></div>
+    <div class="recording-timer" id="recording-timer">0:00</div>
+    <button id="btn-stop-record" class="recording-stop" type="button">⏹</button>
+  </div>
+
+  <div class="reply-banner hidden" id="reply-banner"></div>
+
+  <div class="chat-input-bar">
+    <button class="input-icon-btn" id="chat-attach" type="button">＋</button>
+    <div class="input-wrap">
+      <input type="text" id="chat-input" placeholder="Ketik pesan..." autocomplete="off">
+      <button class="input-icon-btn" id="chat-emoji" type="button">😊</button>
+      <button class="input-icon-btn" id="chat-gif" type="button">GIF</button>
+    </div>
+    <button class="input-icon-btn mic-btn" id="btn-record" type="button">🎤</button>
+    <button class="input-round-btn send-btn" id="chat-send" type="button">➤</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     REACTION PICKER
+     ============================================================ -->
+<div id="reaction-picker" class="reaction-picker hidden">
+  <button class="reaction-btn" data-emoji="❤️" type="button">❤️</button>
+  <button class="reaction-btn" data-emoji="😂" type="button">😂</button>
+  <button class="reaction-btn" data-emoji="👍" type="button">👍</button>
+  <button class="reaction-btn" data-emoji="😮" type="button">😮</button>
+  <button class="reaction-btn" data-emoji="😢" type="button">😢</button>
+  <button class="reaction-btn" data-emoji="🔥" type="button">🔥</button>
+</div>
+
+<!-- ============================================================
+     STICKER PICKER
+     ============================================================ -->
+<div id="sticker-picker" class="sticker-picker hidden">
+  <div class="sticker-picker-header">
+    <div class="sticker-tabs">
+      <button class="sticker-tab active" data-tab="emoji" type="button">😀</button>
+      <button class="sticker-tab" data-tab="gesture" type="button">👍</button>
+      <button class="sticker-tab" data-tab="animal" type="button">🐶</button>
+      <button class="sticker-tab" data-tab="love" type="button">❤️</button>
+      <button class="sticker-tab" data-tab="food" type="button">🍕</button>
+    </div>
+    <button id="sticker-picker-close" class="modal-close" type="button">✕</button>
+  </div>
+  <div class="sticker-picker-grid" id="sticker-picker-grid"></div>
+</div>
+
+<!-- ============================================================
+     ATTACHMENT POPUP
+     ============================================================ -->
+<div id="attachment-popup" class="attachment-popup hidden">
+  <div class="attachment-modal">
+    <div class="attachment-header">
+      <span>Kirim Lampiran</span>
+      <button id="attachment-close" class="modal-close" type="button">✕</button>
+    </div>
+    <div class="attachment-grid">
+      <div class="att-item" data-type="image"><div class="att-icon">🖼️</div><div class="att-label">Gambar</div></div>
+      <div class="att-item" data-type="video"><div class="att-icon">🎥</div><div class="att-label">Video</div></div>
+      <div class="att-item" data-type="location"><div class="att-icon">📍</div><div class="att-label">Lokasi</div></div>
+      <div class="att-item" data-type="contact"><div class="att-icon">📇</div><div class="att-label">Kontak</div></div>
+      <div class="att-item" data-type="document"><div class="att-icon">📄</div><div class="att-label">Dokumen</div></div>
+      <div class="att-item" data-type="ai"><div class="att-icon">🤖</div><div class="att-label">AI Image</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     AUDIO PLAYER MODAL
+     ============================================================ -->
+<div id="audio-player-modal" class="audio-player-modal hidden">
+  <div class="audio-player-box">
+    <div class="audio-player-header">
+      <span>🔊 Voice Note</span>
+      <button id="audio-player-close" class="modal-close" type="button">✕</button>
+    </div>
+    <audio id="audio-player" controls style="width:100%;margin-top:12px;border-radius:8px;"></audio>
+  </div>
+</div>
+
+<!-- ============================================================
+     INFO MODAL
+     ============================================================ -->
+<div id="info-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h3 id="info-modal-title" class="modal-title">Info</h3>
+    <div id="info-modal-body" class="modal-body"></div>
+    <button id="info-modal-btn" class="btn-primary" type="button">OK</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     PROFILE EDIT MODAL
+     ============================================================ -->
+<div id="profile-modal" class="modal-overlay hidden">
+  <div class="modal-box profile-modal-box">
+    <h3 class="modal-title">Edit Profil</h3>
+
+    <div class="edit-banner-preview" id="edit-banner-preview">
+      <button class="edit-banner-btn" id="btn-pick-banner" type="button">📷 Ganti Banner</button>
+    </div>
+    <input type="file" id="file-banner" accept="image/*" hidden>
+
+    <div class="edit-avatar-wrap">
+      <div class="edit-avatar-preview" id="edit-avatar-preview">
+        <span id="edit-avatar-letter">U</span>
+      </div>
+      <button class="edit-avatar-btn" id="btn-pick-avatar" type="button">📷</button>
+      <input type="file" id="file-avatar" accept="image/*" hidden>
+    </div>
+
+    <div class="edit-field">
+      <label>Nama</label>
+      <input type="text" id="edit-name" placeholder="Nama">
+    </div>
+    <div class="edit-field">
+      <label>Bio</label>
+      <textarea id="edit-bio" placeholder="Tentang kamu..." rows="2"></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" id="profile-cancel" type="button">Batal</button>
+      <button class="btn-primary" id="profile-save" type="button">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     NEW CHAT MODAL
+     ============================================================ -->
+<div id="new-chat-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h3 class="modal-title">💬 Mulai Chat Baru</h3>
+    <p class="modal-sub">Masukkan UID atau email teman</p>
+    <input type="text" id="new-chat-email" placeholder="UID atau email..." autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn-secondary" id="new-chat-cancel" type="button">Batal</button>
+      <button class="btn-primary" id="new-chat-start" type="button">Mulai</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     THEME MODAL
+     ============================================================ -->
+<div id="theme-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header-row">
+      <h3 class="modal-title">🎨 Pilih Tema</h3>
+      <button class="modal-close" id="theme-modal-close" type="button">✕</button>
+    </div>
+    <div class="theme-grid">
+      <div class="theme-option" data-theme="kuning" style="--tc:#FFC857;"><div class="theme-circle"></div><div class="theme-name">Kuning</div></div>
+      <div class="theme-option" data-theme="ungu" style="--tc:#8B5CF6;"><div class="theme-circle"></div><div class="theme-name">Ungu</div></div>
+      <div class="theme-option" data-theme="pink" style="--tc:#EC4899;"><div class="theme-circle"></div><div class="theme-name">Pink</div></div>
+      <div class="theme-option active" data-theme="hijau" style="--tc:#10B981;"><div class="theme-circle"></div><div class="theme-name">Hijau</div></div>
+      <div class="theme-option" data-theme="biru" style="--tc:#3B82F6;"><div class="theme-circle"></div><div class="theme-name">Biru</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     WALLPAPER MODAL
+     ============================================================ -->
+<div id="wallpaper-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header-row">
+      <h3 class="modal-title">🖼️ Wallpaper Chat</h3>
+      <button class="modal-close" id="wallpaper-close" type="button">✕</button>
+    </div>
+
+    <div class="wallpaper-grid">
+      <div class="wallpaper-preset active" data-preset="default" style="background:#f0f0f0;"><span>Default</span></div>
+      <div class="wallpaper-preset" data-preset="kuning" style="background:linear-gradient(135deg,#FFC857,#E67E22);"><span>Kuning</span></div>
+      <div class="wallpaper-preset" data-preset="ungu" style="background:linear-gradient(135deg,#A78BFA,#7C3AED);"><span>Ungu</span></div>
+      <div class="wallpaper-preset" data-preset="pink" style="background:linear-gradient(135deg,#F472B6,#DB2777);"><span>Pink</span></div>
+      <div class="wallpaper-preset" data-preset="hijau" style="background:linear-gradient(135deg,#34D399,#059669);"><span>Hijau</span></div>
+      <div class="wallpaper-preset" data-preset="biru" style="background:linear-gradient(135deg,#60A5FA,#2563EB);"><span>Biru</span></div>
+      <div class="wallpaper-preset" data-preset="gelap" style="background:linear-gradient(135deg,#1F1B2E,#0F0A1A);"><span>Gelap</span></div>
+    </div>
+
+    <button class="btn-secondary" id="wallpaper-upload" type="button">📷 Upload dari Galeri</button>
+    <input type="file" id="wallpaper-file" accept="image/*" hidden>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" id="wallpaper-reset" type="button">Reset</button>
+      <button class="btn-primary" id="wallpaper-save" type="button">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     FRIEND ADD MODAL
+     ============================================================ -->
+<div id="fr-add-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header-row">
+      <h3 class="modal-title">➕ Tambah Teman</h3>
+      <button class="modal-close" id="fr-add-close" type="button">✕</button>
+    </div>
+    <input type="text" id="fr-add-input" placeholder="Cari nama, email, atau UID..." autocomplete="off">
+    <button class="btn-primary" id="fr-add-search" type="button" style="margin-top:12px;">Cari User</button>
+    <div id="fr-add-result" class="fr-search-results"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     CREATE STORY MODAL
+     ============================================================ -->
+<div id="create-story-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header-row">
+      <h3 class="modal-title">📖 Buat Story</h3>
+      <button class="modal-close" id="create-story-cancel" type="button">✕</button>
+    </div>
+    <div class="create-story-preview" id="create-story-preview">
+      <div class="create-story-placeholder">
+        <div class="csp-icon">📷</div>
+        <div>Tap untuk pilih foto</div>
+      </div>
+    </div>
+    <input type="file" id="create-story-file" accept="image/*" hidden>
+    <input type="text" id="create-story-caption" placeholder="Caption (opsional)" maxlength="100">
+    <button class="btn-primary" id="create-story-post" type="button">Post Story</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     STORY VIEWER
+     ============================================================ -->
+<div id="story-viewer-tk" class="story-viewer hidden">
+  <div class="story-viewer-progress-wrap" id="story-progress-wrap"></div>
+  <div class="story-viewer-header">
+    <div class="story-viewer-avatar" id="story-viewer-avatar"></div>
+    <div class="story-viewer-info">
+      <div class="story-viewer-name" id="story-viewer-name">User</div>
+      <div class="story-viewer-time" id="story-viewer-time">Baru saja</div>
+    </div>
+    <button class="story-viewer-close" id="story-viewer-close" type="button">✕</button>
+  </div>
+  <div class="story-viewer-content">
+    <img id="story-viewer-image" src="" alt="">
+    <div class="story-viewer-caption" id="story-viewer-caption"></div>
+  </div>
+  <button class="story-nav story-nav-prev" id="story-nav-prev" type="button"></button>
+  <button class="story-nav story-nav-next" id="story-nav-next" type="button"></button>
+</div>
+
+<!-- ============================================================
+     GAME OVERLAY
+     ============================================================ -->
+<div id="game-overlay" class="game-overlay hidden">
+  <button class="game-close" id="game-close" type="button">✕</button>
+  <div class="game-hud">
+    <div class="game-hud-item">
+      <div class="game-hud-value" id="game-score-live">0</div>
+      <div class="game-hud-label">SKOR</div>
+    </div>
+    <div class="game-hud-item">
+      <div class="game-hud-value" id="game-timer">30.0</div>
+      <div class="game-hud-label">DETIK</div>
+    </div>
+  </div>
+  <div class="game-tap-target" id="game-tap-target">
+    <div class="tap-target-inner">
+      <div class="tap-target-bolt">⚡</div>
+      <div class="tap-target-text">TAP!</div>
+    </div>
+  </div>
+</div>
+
+<div id="game-over-modal" class="modal-overlay hidden">
+  <div class="modal-box game-over-box">
+    <h3 class="modal-title" id="game-over-title">SELESAI!</h3>
+    <div class="game-over-score-wrap">
+      <div class="game-over-score" id="game-over-score">0</div>
+      <div class="game-over-label">SKOR</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="game-over-home" type="button">🏠 Home</button>
+      <button class="btn-primary" id="game-over-again" type="button">▶ Main Lagi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TOAST
+     ============================================================ -->
+<div id="toast" class="toast hidden"></div>
+
+<!-- Mention Dropdown -->
+<div id="mention-dropdown" class="mention-dropdown hidden"></div>
+
+<!-- Sticker Preview Overlay -->
+<div id="sticker-preview-overlay" class="sticker-preview-overlay hidden" onclick="this.classList.add('hidden')">
+  <div class="sticker-preview-big" id="sticker-preview-big"></div>
+</div>
+
+<!-- ============================================================
+     SCRIPTS
+     ============================================================ -->
+<script>
+  /* register service worker */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("./service-worker.js")
+        .then((reg) => {
+          console.log("✅ SW registered:", reg.scope);
+          // cek update tiap 1 jam
+          setInterval(() => reg.update(), 60 * 60 * 1000);
+        })
+        .catch((err) => {
+          console.warn("⚠️ SW gagal:", err);
+        });
+    });
+  }
+</script>
+<script src="assets/js/firebase-config.js"></script>
+<script type="module" src="assets/js/app.js"></script>
+
+</body>
+</html>
